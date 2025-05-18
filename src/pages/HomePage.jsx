@@ -25,6 +25,10 @@ const HomePage = () => {
         <Link to={"game/hard"}>
           <Button className="w-full h-12">Hard</Button>
         </Link>
+
+        <Link to={"game/expert"}>
+          <Button className="w-full h-12">expert</Button>
+        </Link>
       </div>
     </div>
   );

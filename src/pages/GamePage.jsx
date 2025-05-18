@@ -14,7 +14,11 @@ const GamePage = () => {
   const [mistakes, setMistakes] = useState(0);
   const [history, setHistory] = useState([]);
   const [redoHistory, setRedoHistory] = useState([]);
-  const [notes, setNotes] = useState(Array(81).fill().map(() => new Set()));
+  const [notes, setNotes] = useState(
+    Array(81)
+      .fill()
+      .map(() => new Set())
+  );
   const [hintsRemaining, setHintsRemaining] = useState(3);
   const MAX_MISTAKES = 3;
   const MAX_HINTS = 3;
@@ -22,7 +26,9 @@ const GamePage = () => {
   // Fetch puzzle
   useEffect(() => {
     const fetchPuzzle = async () => {
-      const storedPuzzleId = localStorage.getItem(`currentPuzzle_${difficulty}`);
+      const storedPuzzleId = localStorage.getItem(
+        `currentPuzzle_${difficulty}`
+      );
       const storedData = localStorage.getItem("sudokuData");
 
       if (storedData) {
@@ -72,7 +78,11 @@ const GamePage = () => {
       setRedoHistory([]);
       setMistakes(0);
       setHintsRemaining(MAX_HINTS);
-      setNotes(Array(81).fill().map(() => new Set()));
+      setNotes(
+        Array(81)
+          .fill()
+          .map(() => new Set())
+      );
     };
 
     fetchPuzzle();
@@ -82,7 +92,7 @@ const GamePage = () => {
   useEffect(() => {
     if (mistakes >= MAX_MISTAKES) {
       setTimeout(() => {
-        navigate('/');
+        navigate("/");
       }, 1000);
     }
   }, [mistakes, navigate]);
@@ -94,25 +104,37 @@ const GamePage = () => {
   };
 
   // Handle number input
-  const handleNumberInput = useCallback((num) => {
-    if (selectedCell === null || puzzle[selectedCell] !== "." || mistakes >= MAX_MISTAKES) return;
+  const handleNumberInput = useCallback(
+    (num) => {
+      if (
+        selectedCell === null ||
+        puzzle[selectedCell] !== "." ||
+        mistakes >= MAX_MISTAKES
+      )
+        return;
 
-    const newUserInput = [...userInput];
-    const newHistory = [
-      ...history,
-      { index: selectedCell, prevValue: userInput[selectedCell], newValue: num }
-    ];
+      const newUserInput = [...userInput];
+      const newHistory = [
+        ...history,
+        {
+          index: selectedCell,
+          prevValue: userInput[selectedCell],
+          newValue: num,
+        },
+      ];
 
-    newUserInput[selectedCell] = num;
-    setUserInput(newUserInput);
-    setHistory(newHistory);
-    setRedoHistory([]);
+      newUserInput[selectedCell] = num;
+      setUserInput(newUserInput);
+      setHistory(newHistory);
+      setRedoHistory([]);
 
-    // Check if the input is correct
-    if (num !== solution[selectedCell]) {
-      setMistakes(mistakes + 1);
-    }
-  }, [selectedCell, userInput, history, solution, mistakes, puzzle]);
+      // Check if the input is correct
+      if (num !== solution[selectedCell]) {
+        setMistakes(mistakes + 1);
+      }
+    },
+    [selectedCell, userInput, history, solution, mistakes, puzzle]
+  );
 
   // Handle erase
   const handleErase = useCallback(() => {
@@ -121,12 +143,17 @@ const GamePage = () => {
       puzzle[selectedCell] !== "." ||
       userInput[selectedCell] === null ||
       mistakes >= MAX_MISTAKES
-    ) return;
+    )
+      return;
 
     const newUserInput = [...userInput];
     const newHistory = [
       ...history,
-      { index: selectedCell, prevValue: userInput[selectedCell], newValue: null }
+      {
+        index: selectedCell,
+        prevValue: userInput[selectedCell],
+        newValue: null,
+      },
     ];
 
     newUserInput[selectedCell] = null;
@@ -168,7 +195,8 @@ const GamePage = () => {
       puzzle[selectedCell] !== "." ||
       hintsRemaining <= 0 ||
       mistakes >= MAX_MISTAKES
-    ) return;
+    )
+      return;
 
     const correctValue = solution[selectedCell];
     const newUserInput = [...userInput];
@@ -177,11 +205,23 @@ const GamePage = () => {
     setUserInput(newUserInput);
     setHistory([
       ...history,
-      { index: selectedCell, prevValue: userInput[selectedCell], newValue: correctValue }
+      {
+        index: selectedCell,
+        prevValue: userInput[selectedCell],
+        newValue: correctValue,
+      },
     ]);
     setRedoHistory([]);
     setHintsRemaining(hintsRemaining - 1);
-  }, [selectedCell, solution, userInput, history, hintsRemaining, mistakes, puzzle]);
+  }, [
+    selectedCell,
+    solution,
+    userInput,
+    history,
+    hintsRemaining,
+    mistakes,
+    puzzle,
+  ]);
 
   // Handle new random puzzle
   const handleNewPuzzle = useCallback(() => {
@@ -190,7 +230,8 @@ const GamePage = () => {
       const parsedData = JSON.parse(storedData);
       if (parsedData[difficulty]) {
         const puzzles = parsedData[difficulty];
-        const randomPuzzle = puzzles[Math.floor(Math.random() * puzzles.length)];
+        const randomPuzzle =
+          puzzles[Math.floor(Math.random() * puzzles.length)];
         loadPuzzle(randomPuzzle);
         localStorage.setItem(`currentPuzzle_${difficulty}`, randomPuzzle.id);
       }
@@ -207,7 +248,11 @@ const GamePage = () => {
     setRedoHistory([]);
     setMistakes(0);
     setHintsRemaining(MAX_HINTS);
-    setNotes(Array(81).fill().map(() => new Set()));
+    setNotes(
+      Array(81)
+        .fill()
+        .map(() => new Set())
+    );
   };
 
   // Keyboard support
@@ -227,35 +272,66 @@ const GamePage = () => {
         handleRedo();
       } else if (e.key === "h") {
         handleHint();
-      } else if (e.key === "ArrowUp" && selectedCell !== null && selectedCell >= 9) {
+      } else if (
+        e.key === "ArrowUp" &&
+        selectedCell !== null &&
+        selectedCell >= 9
+      ) {
         setSelectedCell(selectedCell - 9);
-      } else if (e.key === "ArrowDown" && selectedCell !== null && selectedCell < 72) {
+      } else if (
+        e.key === "ArrowDown" &&
+        selectedCell !== null &&
+        selectedCell < 72
+      ) {
         setSelectedCell(selectedCell + 9);
-      } else if (e.key === "ArrowLeft" && selectedCell !== null && selectedCell % 9 !== 0) {
+      } else if (
+        e.key === "ArrowLeft" &&
+        selectedCell !== null &&
+        selectedCell % 9 !== 0
+      ) {
         setSelectedCell(selectedCell - 1);
-      } else if (e.key === "ArrowRight" && selectedCell !== null && selectedCell % 9 !== 8) {
+      } else if (
+        e.key === "ArrowRight" &&
+        selectedCell !== null &&
+        selectedCell % 9 !== 8
+      ) {
         setSelectedCell(selectedCell + 1);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleNumberInput, handleErase, handleUndo, handleRedo, handleHint, selectedCell, mistakes]);
+  }, [
+    handleNumberInput,
+    handleErase,
+    handleUndo,
+    handleRedo,
+    handleHint,
+    selectedCell,
+    mistakes,
+  ]);
 
   // Calculate positions of selected cell
-  const selectedRow = selectedCell !== null ? Math.floor(selectedCell / 9) : null;
+  const selectedRow =
+    selectedCell !== null ? Math.floor(selectedCell / 9) : null;
   const selectedCol = selectedCell !== null ? selectedCell % 9 : null;
-  const selectedDigit = selectedCell !== null ? 
-    (userInput[selectedCell] || puzzle[selectedCell] !== "." ? puzzle[selectedCell] : null) : 
-    null;
-  const selectedSubgrid = selectedCell !== null
-    ? Math.floor(selectedRow / 3) * 3 + Math.floor(selectedCol / 3)
-    : null;
+  const selectedDigit =
+    selectedCell !== null
+      ? userInput[selectedCell] || puzzle[selectedCell] !== "."
+        ? puzzle[selectedCell]
+        : null
+      : null;
+  const selectedSubgrid =
+    selectedCell !== null
+      ? Math.floor(selectedRow / 3) * 3 + Math.floor(selectedCol / 3)
+      : null;
 
   // Calculate remaining numbers
-  const remainingNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => {
-    const countInPuzzle = puzzle.filter(c => c === num.toString()).length;
-    const countInUserInput = userInput.filter(c => c === num.toString()).length;
+  const remainingNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => {
+    const countInPuzzle = puzzle.filter((c) => c === num.toString()).length;
+    const countInUserInput = userInput.filter(
+      (c) => c === num.toString()
+    ).length;
     return 9 - countInPuzzle - countInUserInput;
   });
 
@@ -270,27 +346,39 @@ const GamePage = () => {
         </div>
 
         {/* Sudoku Grid */}
-        <div className={`sudoku border-2 rounded-2xl overflow-hidden w-full ${mistakes >= MAX_MISTAKES ? "border-red-500" : "border-slate-400"}`}>
-          {Array(81).fill().map((_, index) => {
-            const row = Math.floor(index / 9);
-            const col = index % 9;
-            const subgrid = Math.floor(row / 3) * 3 + Math.floor(col / 3);
-            const cellValue = puzzle[index] !== "." ? puzzle[index] : userInput[index];
-            const isInitial = puzzle[index] !== ".";
-            const isError = !isInitial && userInput[index] && userInput[index] !== solution[index];
+        <div
+          className={`sudoku border-2 rounded-2xl overflow-hidden w-full ${
+            mistakes >= MAX_MISTAKES ? "border-red-500" : "border-slate-400"
+          }`}
+        >
+          {Array(81)
+            .fill()
+            .map((_, index) => {
+              const row = Math.floor(index / 9);
+              const col = index % 9;
+              const subgrid = Math.floor(row / 3) * 3 + Math.floor(col / 3);
+              const cellValue =
+                puzzle[index] !== "." ? puzzle[index] : userInput[index];
+              const isInitial = puzzle[index] !== ".";
+              const isError =
+                !isInitial &&
+                userInput[index] &&
+                userInput[index] !== solution[index];
 
-            // Highlight states
-            const isSameRowOrCol = selectedCell !== null &&
-              (row === selectedRow || col === selectedCol);
-            const isSameSubgrid = selectedCell !== null && subgrid === selectedSubgrid;
-            const isSameDigit = selectedDigit && cellValue === selectedDigit;
-            const isSelected = index === selectedCell;
+              // Highlight states
+              const isSameRowOrCol =
+                selectedCell !== null &&
+                (row === selectedRow || col === selectedCol);
+              const isSameSubgrid =
+                selectedCell !== null && subgrid === selectedSubgrid;
+              const isSameDigit = selectedDigit && cellValue === selectedDigit;
+              const isSelected = index === selectedCell;
 
-            return (
-              <div
-                key={index}
-                tabIndex={mistakes >= MAX_MISTAKES ? -1 : 0}
-                className={`aspect-square flex items-center justify-center relative
+              return (
+                <div
+                  key={index}
+                  tabIndex={mistakes >= MAX_MISTAKES ? -1 : 0}
+                  className={`aspect-square flex items-center justify-center relative
                   border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500
                   ${isSelected ? "bg-blue-800/30 z-10" : ""}
                   ${isSameRowOrCol ? "bg-blue-900/20" : ""}
@@ -298,52 +386,73 @@ const GamePage = () => {
                   ${isSameDigit && cellValue ? "bg-blue-700/30" : ""}
                   ${isError ? "bg-red-500/30" : ""}
                   ${
-                    !isSelected && !isSameRowOrCol && !isSameSubgrid && !isSameDigit && !isError
+                    !isSelected &&
+                    !isSameRowOrCol &&
+                    !isSameSubgrid &&
+                    !isSameDigit &&
+                    !isError
                       ? "hover:bg-slate-800/10"
                       : ""
                   }
-                  ${col % 3 === 2 && col !== 8 ? "border-r-2 border-slate-400" : ""}
-                  ${row % 3 === 2 && row !== 8 ? "border-b-2 border-slate-400" : ""}`}
-                onClick={() => handleCellClick(index)}
-                onFocus={() => handleCellClick(index)}
-              >
-                {isInitial ? (
-                  <span className="font-bold text-slate-900 dark:text-slate-100 text-xl">
-                    {cellValue}
-                  </span>
-                ) : cellValue ? (
-                  <span className={`font-semibold text-xl ${isError ? "text-red-500" : "text-blue-600 dark:text-blue-400"}`}>
-                    {cellValue}
-                  </span>
-                ) : (
-                  <div className="w-full h-full p-0.5">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                      <div key={num} className="flex items-center justify-center">
-                        {notes[index]?.has(num) && (
-                          <span className="text-xs text-slate-500 dark:text-slate-400">
-                            {num}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  ${
+                    col % 3 === 2 && col !== 8
+                      ? "border-r-2 border-r-blue-400"
+                      : ""
+                  }
+                  ${
+                    row % 3 === 2 && row !== 8
+                      ? "border-b-2 border-b-blue-400"
+                      : ""
+                  }`}
+                  onClick={() => handleCellClick(index)}
+                  onFocus={() => handleCellClick(index)}
+                >
+                  {isInitial ? (
+                    <span className="font-bold text-slate-900 dark:text-slate-100 text-xl">
+                      {cellValue}
+                    </span>
+                  ) : cellValue ? (
+                    <span
+                      className={`font-semibold text-xl ${
+                        isError
+                          ? "text-red-500"
+                          : "text-blue-600 dark:text-blue-400"
+                      }`}
+                    >
+                      {cellValue}
+                    </span>
+                  ) : (
+                    <div className="w-full h-full p-0.5">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                        <div
+                          key={num}
+                          className="flex items-center justify-center"
+                        >
+                          {notes[index]?.has(num) && (
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                              {num}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
         </div>
 
         {/* Controls */}
         <div className="space-y-2">
           <div className="flex justify-center gap-2">
-            <button 
+            <button
               onClick={handleNewPuzzle}
               className="bg-slate-900 text-slate-400 hover:text-slate-50 p-2 hover:bg-slate-800 size-10 rounded-md cursor-pointer"
             >
               <Plus className="size-6" />
             </button>
 
-            <button 
+            <button
               onClick={handleUndo}
               disabled={history.length === 0 || mistakes >= MAX_MISTAKES}
               className="bg-slate-900 text-slate-400 hover:text-slate-50 p-2 hover:bg-slate-800 size-10 rounded-md cursor-pointer disabled:opacity-50"
@@ -351,7 +460,7 @@ const GamePage = () => {
               <Undo2 className="size-6" />
             </button>
 
-            <button 
+            <button
               onClick={handleRedo}
               disabled={redoHistory.length === 0 || mistakes >= MAX_MISTAKES}
               className="bg-slate-900 text-slate-400 hover:text-slate-50 p-2 hover:bg-slate-800 size-10 rounded-md cursor-pointer disabled:opacity-50"
@@ -359,7 +468,7 @@ const GamePage = () => {
               <Redo2 className="size-6" />
             </button>
 
-            <button 
+            <button
               onClick={handleErase}
               disabled={
                 selectedCell === null ||
@@ -372,11 +481,11 @@ const GamePage = () => {
               <Eraser className="size-6" />
             </button>
 
-            <button 
+            <button
               onClick={handleHint}
               disabled={
-                selectedCell === null || 
-                puzzle[selectedCell] !== "." || 
+                selectedCell === null ||
+                puzzle[selectedCell] !== "." ||
                 hintsRemaining <= 0 ||
                 mistakes >= MAX_MISTAKES
               }
