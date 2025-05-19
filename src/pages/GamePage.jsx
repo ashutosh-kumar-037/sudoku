@@ -378,7 +378,7 @@ const GamePage = () => {
                 <div
                   key={index}
                   tabIndex={mistakes >= MAX_MISTAKES ? -1 : 0}
-                  className={`aspect-square flex items-center justify-center relative
+                  className={`aspect-square flex items-center justify-center relative transition-all cursor-pointer
                   border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500
                   ${isSelected ? "bg-blue-800/30 z-10" : ""}
                   ${isSameRowOrCol ? "bg-blue-900/20" : ""}
@@ -391,7 +391,7 @@ const GamePage = () => {
                     !isSameSubgrid &&
                     !isSameDigit &&
                     !isError
-                      ? "hover:bg-slate-800/10"
+                      ? "hover:bg-blue-700/30"
                       : ""
                   }
                   ${
