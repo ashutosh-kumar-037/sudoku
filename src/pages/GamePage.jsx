@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Eraser, Lightbulb, Redo2, Undo2, Plus } from "lucide-react";
 
@@ -23,6 +23,157 @@ const GamePage = () => {
   const MAX_MISTAKES = 3;
   const MAX_HINTS = 3;
 
+  // Calculate selected cell properties
+  const selectedRow = useMemo(
+    () => (selectedCell !== null ? Math.floor(selectedCell / 9) : null),
+    [selectedCell]
+  );
+  const selectedCol = useMemo(
+    () => (selectedCell !== null ? selectedCell % 9 : null),
+    [selectedCell]
+  );
+  const selectedDigit = useMemo(
+    () =>
+      selectedCell !== null
+        ? userInput[selectedCell] ||
+          (puzzle[selectedCell] !== "." ? puzzle[selectedCell] : null)
+        : null,
+    [selectedCell, userInput, puzzle]
+  );
+  const selectedSubgrid = useMemo(
+    () =>
+      selectedCell !== null
+        ? Math.floor(selectedRow / 3) * 3 + Math.floor(selectedCol / 3)
+        : null,
+    [selectedCell, selectedRow, selectedCol]
+  );
+
+  // Calculate remaining numbers
+  const remainingNumbers = useMemo(() => {
+    return [1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => {
+      const countInPuzzle = puzzle.filter((c) => c === num.toString()).length;
+      const countInUserInput = userInput.filter(
+        (c) => c === num.toString()
+      ).length;
+      return 9 - countInPuzzle - countInUserInput;
+    });
+  }, [puzzle, userInput]);
+
+  // Memoized Cell component
+  const Cell = React.memo(
+    ({
+      index,
+      puzzle,
+      userInput,
+      solution,
+      selectedCell,
+      selectedRow,
+      selectedCol,
+      selectedSubgrid,
+      selectedDigit,
+      mistakes,
+      notes,
+      handleCellClick,
+    }) => {
+      const row = Math.floor(index / 9);
+      const col = index % 9;
+      const subgrid = Math.floor(row / 3) * 3 + Math.floor(col / 3);
+      const cellValue =
+        puzzle[index] !== "." ? puzzle[index] : userInput[index];
+      const isInitial = puzzle[index] !== ".";
+      const isError =
+        !isInitial && userInput[index] && userInput[index] !== solution[index];
+
+      // Highlight states
+      const isSameRowOrCol =
+        selectedCell !== null && (row === selectedRow || col === selectedCol);
+      const isSameSubgrid =
+        selectedCell !== null && subgrid === selectedSubgrid;
+      const isSameDigit = selectedDigit && cellValue === selectedDigit;
+      const isSelected = index === selectedCell;
+
+      return (
+        <div
+          tabIndex={mistakes >= MAX_MISTAKES ? -1 : 0}
+          className={`aspect-square flex items-center justify-center relative transition-all cursor-pointer
+          border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500
+          ${isSelected ? "bg-blue-800/30 z-10" : ""}
+          ${isSameRowOrCol ? "bg-blue-900/20" : ""}
+          ${isSameSubgrid ? "bg-blue-800/10" : ""}
+          ${isSameDigit && cellValue ? "bg-blue-700/30" : ""}
+          ${isError ? "bg-red-500/30" : ""}
+          ${
+            !isSelected &&
+            !isSameRowOrCol &&
+            !isSameSubgrid &&
+            !isSameDigit &&
+            !isError
+              ? "hover:bg-blue-700/30"
+              : ""
+          }
+          ${col % 3 === 2 && col !== 8 ? "border-r-2 border-r-blue-400" : ""}
+          ${row % 3 === 2 && row !== 8 ? "border-b-2 border-b-blue-400" : ""}`}
+          onClick={() => handleCellClick(index)}
+          onFocus={() => handleCellClick(index)}
+        >
+          {isInitial ? (
+            <span className="font-bold text-slate-900 dark:text-slate-100 text-xl">
+              {cellValue}
+            </span>
+          ) : cellValue ? (
+            <span
+              className={`font-semibold text-xl ${
+                isError ? "text-red-500" : "text-blue-600 dark:text-blue-400"
+              }`}
+            >
+              {cellValue}
+            </span>
+          ) : (
+            <div className="w-full h-full p-0.5">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                <div key={num} className="flex items-center justify-center">
+                  {notes[index]?.has(num) && (
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {num}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+  );
+
+  // Handle game over
+  const handleGameOver = useCallback(() => {
+    const gameState = {
+      difficulty,
+      mistakes,
+      userInput,
+      hintsRemaining,
+      remainingNumbers,
+      puzzleId: currentPuzzleId,
+    };
+    localStorage.setItem(
+      `gameState_${currentPuzzleId}`,
+      JSON.stringify(gameState)
+    );
+
+    setTimeout(() => {
+      navigate("/");
+    }, 1000);
+  }, [
+    difficulty,
+    mistakes,
+    userInput,
+    hintsRemaining,
+    remainingNumbers,
+    currentPuzzleId,
+    navigate,
+  ]);
+
   // Fetch puzzle
   useEffect(() => {
     const fetchPuzzle = async () => {
@@ -36,7 +187,19 @@ const GamePage = () => {
         if (parsedData[difficulty]) {
           const puzzles = parsedData[difficulty];
 
+          // Check for saved game state
           if (storedPuzzleId) {
+            const savedState = localStorage.getItem(
+              `gameState_${storedPuzzleId}`
+            );
+            if (savedState) {
+              const parsedState = JSON.parse(savedState);
+              if (parsedState.puzzleId === storedPuzzleId) {
+                loadSavedGame(parsedState, storedPuzzleId);
+                return;
+              }
+            }
+
             const storedPuzzle = puzzles.find((p) => p.id === storedPuzzleId);
             if (storedPuzzle) {
               loadPuzzle(storedPuzzle);
@@ -85,23 +248,65 @@ const GamePage = () => {
       );
     };
 
+    const loadSavedGame = (savedState, puzzleId) => {
+      const puzzleData = JSON.parse(localStorage.getItem("sudokuData"))[
+        difficulty
+      ].find((p) => p.id === puzzleId);
+
+      setPuzzle(puzzleData.puzzle.split(""));
+      setSolution(puzzleData.solution.split(""));
+      setUserInput(savedState.userInput);
+      setCurrentPuzzleId(puzzleId);
+      setMistakes(savedState.mistakes);
+      setHintsRemaining(savedState.hintsRemaining);
+      setHistory([]);
+      setRedoHistory([]);
+      // Notes would need to be saved/loaded if you want to persist them
+    };
+
     fetchPuzzle();
   }, [difficulty]);
+
+  // Save game state on changes
+  useEffect(() => {
+    if (currentPuzzleId) {
+      const gameState = {
+        difficulty,
+        mistakes,
+        userInput,
+        hintsRemaining,
+        remainingNumbers,
+        puzzleId: currentPuzzleId,
+      };
+      localStorage.setItem(
+        `gameState_${currentPuzzleId}`,
+        JSON.stringify(gameState)
+      );
+    }
+  }, [
+    difficulty,
+    mistakes,
+    userInput,
+    hintsRemaining,
+    remainingNumbers,
+    currentPuzzleId,
+  ]);
 
   // Handle game over when mistakes exceed maximum
   useEffect(() => {
     if (mistakes >= MAX_MISTAKES) {
-      setTimeout(() => {
-        navigate("/");
-      }, 1000);
+      handleGameOver();
     }
-  }, [mistakes, navigate]);
+  }, [mistakes, handleGameOver]);
 
   // Handle cell selection
-  const handleCellClick = (index) => {
-    if (mistakes >= MAX_MISTAKES) return;
-    setSelectedCell(index);
-  };
+  const handleCellClick = useCallback(
+    (index) => {
+      if (mistakes >= MAX_MISTAKES) return;
+      setSelectedCell(index);
+    },
+    [mistakes]
+  );
 
   // Handle number input
   const handleNumberInput = useCallback(
@@ -311,30 +516,6 @@ const GamePage = () => {
     mistakes,
   ]);
 
-  // Calculate positions of selected cell
-  const selectedRow =
-    selectedCell !== null ? Math.floor(selectedCell / 9) : null;
-  const selectedCol = selectedCell !== null ? selectedCell % 9 : null;
-  const selectedDigit =
-    selectedCell !== null
-      ? userInput[selectedCell] || puzzle[selectedCell] !== "."
-        ? puzzle[selectedCell]
-        : null
-      : null;
-  const selectedSubgrid =
-    selectedCell !== null
-      ? Math.floor(selectedRow / 3) * 3 + Math.floor(selectedCol / 3)
-      : null;
-
-  // Calculate remaining numbers
-  const remainingNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => {
-    const countInPuzzle = puzzle.filter((c) => c === num.toString()).length;
-    const countInUserInput = userInput.filter(
-      (c) => c === num.toString()
-    ).length;
-    return 9 - countInPuzzle - countInUserInput;
-  });
-
   return (
     <div className="flex flex-col items-center justify-center min-h-svh p-4">
       <div className="space-y-4 w-auto">
@@ -351,95 +532,27 @@ const GamePage = () => {
             mistakes >= MAX_MISTAKES ? "border-red-500" : "border-slate-400"
           }`}
         >
-          {Array(81)
-            .fill()
-            .map((_, index) => {
-              const row = Math.floor(index / 9);
-              const col = index % 9;
-              const subgrid = Math.floor(row / 3) * 3 + Math.floor(col / 3);
-              const cellValue =
-                puzzle[index] !== "." ? puzzle[index] : userInput[index];
-              const isInitial = puzzle[index] !== ".";
-              const isError =
-                !isInitial &&
-                userInput[index] &&
-                userInput[index] !== solution[index];
-
-              // Highlight states
-              const isSameRowOrCol =
-                selectedCell !== null &&
-                (row === selectedRow || col === selectedCol);
-              const isSameSubgrid =
-                selectedCell !== null && subgrid === selectedSubgrid;
-              const isSameDigit = selectedDigit && cellValue === selectedDigit;
-              const isSelected = index === selectedCell;
-
-              return (
-                <div
+          <div className="sudoku">
+            {Array(81)
+              .fill()
+              .map((_, index) => (
+                <Cell
                   key={index}
-                  tabIndex={mistakes >= MAX_MISTAKES ? -1 : 0}
-                  className={`aspect-square flex items-center justify-center relative transition-all cursor-pointer
-                  border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500
-                  ${isSelected ? "bg-blue-800/30 z-10" : ""}
-                  ${isSameRowOrCol ? "bg-blue-900/20" : ""}
-                  ${isSameSubgrid ? "bg-blue-800/10" : ""}
-                  ${isSameDigit && cellValue ? "bg-blue-700/30" : ""}
-                  ${isError ? "bg-red-500/30" : ""}
-                  ${
-                    !isSelected &&
-                    !isSameRowOrCol &&
-                    !isSameSubgrid &&
-                    !isSameDigit &&
-                    !isError
-                      ? "hover:bg-blue-700/30"
-                      : ""
-                  }
-                  ${
-                    col % 3 === 2 && col !== 8
-                      ? "border-r-2 border-r-blue-400"
-                      : ""
-                  }
-                  ${
-                    row % 3 === 2 && row !== 8
-                      ? "border-b-2 border-b-blue-400"
-                      : ""
-                  }`}
-                  onClick={() => handleCellClick(index)}
-                  onFocus={() => handleCellClick(index)}
-                >
-                  {isInitial ? (
-                    <span className="font-bold text-slate-900 dark:text-slate-100 text-xl">
-                      {cellValue}
-                    </span>
-                  ) : cellValue ? (
-                    <span
-                      className={`font-semibold text-xl ${
-                        isError
-                          ? "text-red-500"
-                          : "text-blue-600 dark:text-blue-400"
-                      }`}
-                    >
-                      {cellValue}
-                    </span>
-                  ) : (
-                    <div className="w-full h-full p-0.5">
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                        <div
-                          key={num}
-                          className="flex items-center justify-center"
-                        >
-                          {notes[index]?.has(num) && (
-                            <span className="text-xs text-slate-500 dark:text-slate-400">
-                              {num}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                  index={index}
+                  puzzle={puzzle}
+                  userInput={userInput}
+                  solution={solution}
+                  selectedCell={selectedCell}
+                  selectedRow={selectedRow}
+                  selectedCol={selectedCol}
+                  selectedSubgrid={selectedSubgrid}
+                  selectedDigit={selectedDigit}
+                  mistakes={mistakes}
+                  notes={notes}
+                  handleCellClick={handleCellClick}
+                />
+              ))}
+          </div>
         </div>
 
         {/* Controls */}
@@ -504,8 +617,15 @@ const GamePage = () => {
               <button
                 key={num}
                 onClick={() => handleNumberInput(num.toString())}
-                disabled={mistakes >= MAX_MISTAKES}
-                className="font-semibold flex flex-col items-center justify-center p-1 rounded-md bg-slate-900 hover:bg-slate-800 transition-all disabled:opacity-50"
+                disabled={
+                  mistakes >= MAX_MISTAKES || remainingNumbers[num - 1] <= 0
+                }
+                className={`font-semibold flex flex-col items-center justify-center p-1 rounded-md transition-all 
+                  ${
+                    mistakes >= MAX_MISTAKES || remainingNumbers[num - 1] <= 0
+                      ? "opacity-50 cursor-not-allowed"
+                      : "bg-slate-900 hover:bg-slate-800"
+                  }`}
               >
                 <span className="text-lg text-blue-400">{num}</span>
                 <span className="text-xs text-slate-500">
