@@ -97,10 +97,10 @@ const GamePage = () => {
           tabIndex={mistakes >= MAX_MISTAKES ? -1 : 0}
           className={`aspect-square flex items-center justify-center relative transition-all cursor-pointer
           border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500
-          ${isSelected ? "bg-blue-800/30 z-10" : ""}
-          ${isSameRowOrCol ? "bg-blue-900/20" : ""}
-          ${isSameSubgrid ? "bg-blue-800/10" : ""}
-          ${isSameDigit && cellValue ? "bg-blue-700/30" : ""}
+          ${isSelected ? "bg-blue-800/30 ring-2 ring-blue-400 z-10" : ""}
+          ${isSameRowOrCol ? "bg-blue-900/50" : ""}
+          ${isSameSubgrid ? "bg-blue-900/50" : ""}
+          ${isSameDigit && cellValue ? "bg-blue-700" : ""}
           ${isError ? "bg-red-500/30" : ""}
           ${
             !isSelected &&
@@ -161,9 +161,11 @@ const GamePage = () => {
       JSON.stringify(gameState)
     );
 
+    handleNewPuzzle();
+
     setTimeout(() => {
       navigate("/");
-    }, 1000);
+    }, 3000);
   }, [
     difficulty,
     mistakes,
